@@ -1,37 +1,48 @@
-import {createComparison, defaultRules} from "../lib/compare.js";
+export function initFiltering(elements) {
+  const updateIndexes = (elements, indexes) => {
+    Object.keys(indexes).forEach((elementName) => {
+      if (elements[elementName]) {
+        elements[elementName].append(
+          ...Object.values(indexes[elementName]).map((name) => {
+            const el = document.createElement("option");
+            el.textContent = name;
+            el.value = name;
+            return el;
+          })
+        );
+      }
+    });
+  };
 
-const compare = createComparison(defaultRules);
-
-export function initFiltering(elements, indexes) {
-    Object.keys(indexes)
-        .forEach((elementName) => {
-            elements[elementName].append(
-                ...Object.values(indexes[elementName])
-                    .map(name => {
-                        const filterOption = document.createElement('option');
-                        filterOption.value = name;
-                        filterOption.textContent = name;
-                        return filterOption;
-
-                    })
-            );
-        });
-
-    return (data, state, action) => {
-        if (action && action.name === 'clear') {
-            const clearInputParent = action.parentElement;
-            const clearInput = clearInputParent.querySelector('input');
-
-            if (clearInput) {
-                clearInput.value = '';
-            }
-            const fieldName = action.dataset.field;
-            if (fieldName && state[fieldName]) {
-                state[fieldName] = '';
-            }
-            
+  const applyFiltering = (query, state, action) => {
+    if (action && action.name === "clear") {
+      const parent = action.closest(".filter-wrapper"); // Добавлена точка в CSS-селектор
+      if (parent) {
+        const input = parent.querySelector("input");
+        if (input) {
+          input.value = "";
+          state[input.name] = "";
         }
-
-        return data.filter(row => compare(row, state));
+      }
     }
+
+    const filter = {};
+    Object.keys(elements).forEach((key) => {
+      if (elements[key]) {
+        if (
+          ["INPUT", "SELECT"].includes(elements[key].tagName) &&
+          elements[key].value
+        ) {
+          filter[`filter[${elements[key].name}]`] = elements[key].value;
+        }
+      }
+    });
+
+    return Object.keys(filter).length ? Object.assign({}, query, filter) : query;
+  };
+
+  return {
+    updateIndexes,
+    applyFiltering,
+  };
 }
